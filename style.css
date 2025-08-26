@@ -1,0 +1,81 @@
+/*
+   Ce fichier CSS contient les styles de base pour l'application de compensation.
+   Nous utilisons la syntaxe @tailwind pour inclure les couches de base,
+   des composants et des utilitaires de Tailwind CSS.
+*/
+
+/* ---------------------------------------------------- */
+/* --- 1. Inclusion des couches de base de Tailwind --- */
+/* ---------------------------------------------------- */
+
+/* La couche 'base' de Tailwind réinitialise les styles par défaut
+   des navigateurs pour une meilleure cohérence. */
+@tailwind base;
+
+/* -------------------------------------------------------- */
+/* --- 2. Inclusion des composants et utilitaires de Tailwind --- */
+/* -------------------------------------------------------- */
+
+/* La couche 'components' inclut les classes de composants prédéfinies
+   de Tailwind, si vous en avez configuré. */
+@tailwind components;
+
+/* La couche 'utilities' est la plus importante ; elle inclut toutes les
+   classes d'utilitaires de Tailwind comme `flex`, `p-4`, `bg-blue-500`, etc. */
+@tailwind utilities;
+
+/* ---------------------------------------------------- */
+/* --- 3. Styles personnalisés pour le projet --- */
+/* ---------------------------------------------------- */
+
+/* Nous définissons des styles personnalisés pour les éléments
+   clés de l'application afin de garantir une apparence cohérente. */
+
+body {
+  /* La police 'Inter' offre un aspect moderne et lisible. */
+  font-family: 'Inter', sans-serif;
+  /* La couleur de fond est un gris très clair pour un contraste doux. */
+  @apply bg-gray-100;
+}
+
+/* Styles pour les conteneurs principaux, comme une carte. */
+.main-container {
+  /* Centre le contenu sur la page. */
+  @apply mx-auto p-4 md:p-8;
+}
+
+/* Styles pour une carte ou un panneau. */
+.card {
+  /* Crée un fond blanc avec des coins arrondis et une ombre douce. */
+  @apply bg-white p-6 rounded-2xl shadow-lg transition-transform hover:scale-[1.01];
+}
+
+/* Styles pour les titres importants dans l'application. */
+.app-title {
+  /* Utilise une grande police en gras avec une couleur sombre. */
+  @apply text-3xl md:text-4xl font-extrabold text-gray-800 mb-2;
+}
+
+/* Styles pour les sous-titres. */
+.app-subtitle {
+  /* Utilise une police plus petite et plus légère pour le texte descriptif. */
+  @apply text-lg text-gray-600 mb-6;
+}
+
+/* Styles pour les boutons interactifs. */
+.btn {
+  /* Apparence commune à tous les boutons pour une cohérence. */
+  @apply font-bold py-3 px-6 rounded-full text-white transition-colors duration-300;
+}
+
+/* Styles spécifiques pour le bouton principal. */
+.btn-primary {
+  /* Couleur de fond bleue, parfaite pour les actions importantes. */
+  @apply bg-blue-600 hover:bg-blue-700;
+}
+
+/* Styles pour un bouton secondaire. */
+.btn-secondary {
+  /* Couleur de fond grise, pour les actions moins importantes. */
+  @apply bg-gray-500 hover:bg-gray-600;
+}

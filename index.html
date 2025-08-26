@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PharmaPro - Application de Compensation Pharmaceutique</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Light green background */
+        }
+        .sidebar {
+            background-color: #166534; /* Darker green */
+            color: #d1fae5;
+            transition: all 0.3s ease-in-out;
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-radius: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            gap: 1rem;
+        }
+        .sidebar-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .sidebar-item.active {
+            background-color: #d1fae5;
+            color: #166534;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .btn-primary {
+            background-color: #10b981; /* Green-500 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: all 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-primary:hover {
+            background-color: #059669; /* Green-600 */
+        }
+        .text-green-heading {
+            color: #166534; /* Darker green for headings */
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            width: 90%;
+            max-width: 500px;
+        }
+        .close-button {
+            color: #aaa;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #000;
+        }
+        .hidden-page {
+            display: none;
+        }
+
+        /* Print styles */
+        @media print {
+            body > *:not(.print-content) {
+                display: none;
+            }
+            .print-content {
+                display: block;
+                width: 100%;
+                margin: 0;
+                padding: 2rem;
+            }
+            .print-content h1, .print-content h2, .print-content p, .print-content table {
+                color: #000;
+            }
+            .print-content .card {
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+            .print-content table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .print-content th, .print-content td {
+                padding: 8px;
+                border: 1px solid #ddd;
+                text-align: left;
+            }
+            .print-content thead {
+                background-color: #f2f2f2;
+            }
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+
+    <!-- Sidebar -->
+    <aside class="w-72 sidebar shadow-2xl p-6 flex flex-col justify-between print:hidden">
+        <div class="flex-grow">
+            <h1 class="text-4xl font-extrabold mb-12 tracking-wide text-center">PharmaPro</h1>
+            <nav class="space-y-4">
+                <div class="sidebar-item active" data-page="home">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span>Accueil</span>
+                </div>
+                <div class="sidebar-item" data-page="products">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M18 10l-4 4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    <span>Gestion des Produits</span>
+                </div>
+                <div class="sidebar-item" data-page="tstock">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V6m0 2v4m0 4v2m-6 1h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>Historique TStock</span>
+                </div>
+                <div class="sidebar-item" data-page="compensation">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M18 10l-4 4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    <span>Calcul Compensation</span>
+                </div>
+            </nav>
+        </div>
+        <div class="text-center text-sm text-gray-400">
+            <p>&copy; 2024 PharmaPro</p>
+            <p>Tous droits réservés</p>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow p-10 print:hidden">
+        <header class="flex justify-between items-center mb-10">
+            <h2 id="page-title" class="text-4xl font-extrabold text-green-heading tracking-tight"></h2>
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-600 font-medium">Bienvenue, <span id="user-display-name" class="text-green-heading"></span> !</span>
+                <div class="h-12 w-12 rounded-full border-4 border-green-400 shadow-md flex items-center justify-center bg-gray-200 text-gray-700 font-bold text-xl">
+                    <span id="user-initials"></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Section -->
+        <section id="content-container">
+            <!-- Home Page Content -->
+            <div id="home-page" class="page">
+                <p class="text-lg text-gray-600 mb-8">
+                    Bienvenue dans l'application de gestion et de compensation pharmaceutique. Cette plateforme est conçue pour les agents de la Pharmacie Centrale afin d'assurer un suivi optimal des produits et des compensations.
+                </p>
+
+                <!-- Stats Section -->
+                <section class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+                    <!-- Stat Card 1 -->
+                    <div class="card p-8 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-500">Compensations en attente</h3>
+                            <p class="text-5xl font-extrabold text-green-heading mt-2"><span id="pending-compensations-amount">0</span> <span class="text-2xl font-normal">TND</span></p>
+                        </div>
+                        <div class="self-end mt-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V6m0 2v4m0 4v2m-6 1h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <!-- Stat Card 2 -->
+                    <div class="card p-8 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-500">Produits en stock</h3>
+                            <p class="text-5xl font-extrabold text-green-heading mt-2" id="total-products">0</p>
+                        </div>
+                        <div class="self-end mt-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M18 10l-4 4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                        </div>
+                    </div>
+                    <!-- Stat Card 3 -->
+                    <div class="card p-8 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-500">Transactions ce mois</h3>
+                            <p class="text-5xl font-extrabold text-green-heading mt-2" id="monthly-transactions">0</p>
+                        </div>
+                        <div class="self-end mt-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h8m-10 4h12m-10 4h12M4 7h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V9a2 2 0 012-2z" />
+                            </svg>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Products Page Content -->
+            <div id="products-page" class="page hidden-page">
+                <section class="card p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-semibold text-green-heading">Inventaire des Produits</h3>
+                        <button id="addProductBtn" class="btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                            </svg>
+                            Ajouter un Produit
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200" id="productsTable">
+                            <thead class="bg-gray-50 rounded-lg">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">Nom du Produit</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix de Revient</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nouv. Prix Gros HT</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pght Réel</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">xConsg</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <!-- Products will be injected here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <!-- TStock Page Content -->
+            <div id="tstock-page" class="page hidden-page">
+                <section class="card p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-semibold text-green-heading">Historique TStock</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200" id="tstockTable">
+                            <thead class="bg-gray-50 rounded-lg">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">ID Transaction</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom du Produit</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Compensation</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <!-- TStock history will be injected here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Compensation Page Content -->
+            <div id="compensation-page" class="page hidden-page">
+                <section class="card p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-semibold text-green-heading">Calculer la Compensation par Période</h3>
+                    </div>
+                    <form class="space-y-6">
+                        <div>
+                            <label for="compMonth" class="block text-sm font-medium text-gray-700">Mois</label>
+                            <select id="compMonth" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2" required>
+                                <option value="" disabled selected>-- Sélectionner un mois --</option>
+                                <option value="1">Janvier</option>
+                                <option value="2">Février</option>
+                                <option value="3">Mars</option>
+                                <option value="4">Avril</option>
+                                <option value="5">Mai</option>
+                                <option value="6">Juin</option>
+                                <option value="7">Juillet</option>
+                                <option value="8">Août</option>
+                                <option value="9">Septembre</option>
+                                <option value="10">Octobre</option>
+                                <option value="11">Novembre</option>
+                                <option value="12">Décembre</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="compYear" class="block text-sm font-medium text-gray-700">Année</label>
+                            <input type="number" id="compYear" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2" required min="2020" max="2050">
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" id="calculateBtn" class="btn-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM6.5 9a1.5 1.5 0 113 0A1.5 1.5 0 016.5 9zm4 0a1.5 1.5 0 113 0A1.5 1.5 0 0110.5 9z" />
+                                </svg>
+                                Calculer
+                            </button>
+                            <!-- The new print button -->
+                            <button type="button" id="printReportBtn" class="btn-primary bg-blue-600 hover:bg-blue-700 hidden">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5 4a1 1 0 011-1h8a1 1 0 011 1v1h1a1 1 0 011 1v7a1 1 0 01-1 1h-1v2a1 1 0 01-1 1H7a1 1 0 01-1-1v-2H5a1 1 0 01-1-1V6a1 1 0 011-1h1V4zm2 1v1h6V5H7zm6 3H7v4h6V8zm-1 5a1 1 0 110 2H8a1 1 0 110-2h4z" clip-rule="evenodd" />
+                                </svg>
+                                Imprimer le Rapport
+                            </button>
+                        </div>
+                    </form>
+                    <div id="compensationResult" class="mt-8 p-6 bg-green-50 border border-green-200 rounded-xl hidden">
+                        <h4 class="text-xl font-semibold text-green-heading mb-2">Résultat du Calcul pour <span id="reportMonthYear"></span></h4>
+                        <p class="text-gray-700">Montant total de la compensation : <span id="resultAmount" class="font-bold text-green-700 text-xl">0 TND</span></p>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- This spinner is only shown on page load, then removed -->
+            <div id="loading-spinner" class="page flex justify-center items-center h-full fixed inset-0 z-50 bg-f0fdf4">
+                <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-green-900"></div>
+            </div>
+
+        </section>
+    </main>
+    
+    <!-- Print Report Content (hidden by default) -->
+    <div class="print-content hidden">
+        <div class="card p-8">
+            <h1 class="text-3xl font-bold text-green-heading mb-4">Rapport de Compensation</h1>
+            <p class="text-gray-600 mb-6">Période : <span id="printMonthYear"></span></p>
+            <h2 class="text-xl font-semibold mb-2">Détails des transactions :</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Transaction</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produit</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Compensation</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="printReportTableBody">
+                        <!-- Print report rows will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-right text-lg font-bold mt-4">Total Compensation : <span id="printTotalAmount">0 TND</span></p>
+        </div>
+    </div>
+
+
+    <!-- Modal for adding/editing products -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center pb-6 border-b border-gray-200">
+                <h3 id="modalTitle" class="text-2xl font-semibold text-gray-800">Ajouter un Produit</h3>
+                <span class="close-button">&times;</span>
+            </div>
+            <form id="productForm" class="space-y-6 pt-6">
+                <input type="hidden" id="productId" name="productId">
+                <div>
+                    <label for="productName" class="block text-sm font-medium text-gray-700">Nom du produit</label>
+                    <input type="text" id="productName" name="productName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2" required>
+                </div>
+                <div>
+                    <label for="productCode" class="block text-sm font-medium text-gray-700">Code du produit</label>
+                    <input type="text" id="productCode" name="productCode" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2" required>
+                </div>
+                <div>
+                    <label for="prixRevient" class="block text-sm font-medium text-gray-700">Prix de Revient ($\mathit{x_{prev}}$)</label>
+                    <input type="number" id="prixRevient" name="prixRevient" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2" required step="0.01">
+                </div>
+                <div>
+                    <label for="nouvPrixGrosHT" class="block text-sm font-medium text-gray-700">Nouv. Prix Gros HT ($\mathit{x_{grop}}$)</label>
+                    <input type="number" id="nouvPrixGrosHT" name="nouvPrixGrosHT" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2" required step="0.01">
+                </div>
+                <div>
+                    <label for="pghtReel" class="block text-sm font-medium text-gray-700">Pght Réel ($\mathit{xprix_{gror}}$)</label>
+                    <input type="number" id="pghtReel" name="pghtReel" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2" required step="0.01">
+                </div>
+                <div>
+                    <label for="xconsg" class="block text-sm font-medium text-gray-700">xConsg ($\mathit{x_{consg}}$)</label>
+                    <input type="number" id="xconsg" name="xconsg" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 px-4 py-2" required step="0.01">
+                </div>
+                <div class="flex justify-end pt-4">
+                    <button type="submit" class="btn-primary">
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center pb-6 border-b border-gray-200">
+                <h3 class="text-2xl font-semibold text-gray-800">Confirmer la suppression</h3>
+                <span class="close-button" id="closeConfirmModalBtn">&times;</span>
+            </div>
+            <div class="py-6">
+                <p class="text-lg text-gray-700">Êtes-vous sûr de vouloir supprimer ce produit ? Cette action est irréversible.</p>
+            </div>
+            <div class="flex justify-end space-x-4 pt-4">
+                <button id="cancelDeleteBtn" class="bg-gray-200 text-gray-800 font-semibold px-6 py-2 rounded-full hover:bg-gray-300 transition-colors">Annuler</button>
+                <button id="confirmDeleteBtn" class="btn-primary bg-red-600 hover:bg-red-700">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JavaScript logic -->
+    <script type="module">
+        // Import Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, collection, onSnapshot, 
+            addDoc, doc, setDoc, deleteDoc, 
+            query, where, getDocs, updateDoc 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase config and app ID
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db;
+        let auth;
+        let userId;
+
+        // Collections references
+        const productsCollectionRef = () => collection(db, `artifacts/${appId}/public/data/products`);
+        const tStockCollectionRef = () => collection(db, `artifacts/${appId}/public/data/tstock`);
+
+        // --- DOM Elements ---
+        const sidebarItems = document.querySelectorAll('.sidebar-item');
+        const pageTitle = document.getElementById('page-title');
+        const pages = document.querySelectorAll('.page');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const userDisplayName = document.getElementById('user-display-name');
+        const userInitials = document.getElementById('user-initials');
+
+        const productsTableBody = document.querySelector('#productsTable tbody');
+        const addProductBtn = document.getElementById('addProductBtn');
+        const productModal = document.getElementById('productModal');
+        const closeProductModalBtn = productModal.querySelector('.close-button');
+        const productForm = document.getElementById('productForm');
+        const modalTitle = document.getElementById('modalTitle');
+        const productIdInput = document.getElementById('productId');
+        let isEditMode = false;
+
+        const tstockTableBody = document.querySelector('#tstockTable tbody');
+        
+        const compMonthSelect = document.getElementById('compMonth');
+        const compYearInput = document.getElementById('compYear');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const printReportBtn = document.getElementById('printReportBtn');
+        const compensationResultDiv = document.getElementById('compensationResult');
+        const resultAmountSpan = document.getElementById('resultAmount');
+        const reportMonthYearSpan = document.getElementById('reportMonthYear');
+
+        const confirmationModal = document.getElementById('confirmationModal');
+        const closeConfirmModalBtn = document.getElementById('closeConfirmModalBtn');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        let productToDeleteId = null;
+
+        const printReportTableBody = document.getElementById('printReportTableBody');
+        const printMonthYearSpan = document.getElementById('printMonthYear');
+        const printTotalAmountSpan = document.getElementById('printTotalAmount');
+        
+        // Data arrays to be populated from Firestore
+        let products = [];
+        let tstock = [];
+        let totalProducts = 0;
+        let pendingCompensationsAmount = 0;
+        let monthlyTransactions = 0;
+        let lastCalculatedData = [];
+
+        const formatter = new Intl.NumberFormat('fr-TN', {
+            style: 'currency',
+            currency: 'TND',
+        });
+
+        // --- Helper Functions ---
+        const formatCurrency = (amount) => {
+            return formatter.format(amount).replace('TND', ' TND');
+        };
+
+        const renderTable = (data, tableBody, rowRenderer) => {
+            tableBody.innerHTML = ''; // Clear table
+            if (data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500">Aucune donnée disponible.</td></tr>`;
+                return;
+            }
+            data.forEach(item => {
+                const row = rowRenderer(item);
+                tableBody.appendChild(row);
+            });
+        };
+
+        const showPage = (pageName) => {
+            // Hide the spinner once the first page is ready
+            loadingSpinner.style.display = 'none';
+            pages.forEach(page => {
+                page.classList.add('hidden-page');
+            });
+            document.getElementById(`${pageName}-page`).classList.remove('hidden-page');
+        };
+
+        const setPage = (pageName) => {
+            sidebarItems.forEach(item => {
+                item.classList.remove('active');
+            });
+            const activeItem = document.querySelector(`[data-page="${pageName}"]`);
+            if (activeItem) {
+                activeItem.classList.add('active');
+                pageTitle.textContent = activeItem.textContent;
+            }
+            showPage(pageName);
+        };
+        
+        // --- Compensation Calculation Logic (from the PDF) ---
+        const calculateCompensation = (x_prev, x_grop, xprix_gror, xconsg) => {
+            let xperte = 0;
+            let xmag = 0;
+            
+            if (x_prev > x_grop) {
+                xperte = parseFloat((x_prev - x_grop).toFixed(3));
+                xmag = parseFloat((xprix_gror - x_prev).toFixed(3));
+            } else {
+                xperte = 0;
+                xmag = 0;
+            }
+
+            if (x_grop < xprix_gror && x_grop > x_prev) {
+                xmag = parseFloat((xprix_gror - x_grop).toFixed(3));
+            }
+            
+            return parseFloat(((xperte + xmag) * xconsg).toFixed(2));
+        };
+
+        // --- Firestore Data Fetching and Rendering ---
+
+        const fetchAndRenderProducts = () => {
+            if (!db) return;
+            // Listen for real-time updates on the products collection
+            onSnapshot(productsCollectionRef(), (snapshot) => {
+                products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                totalProducts = products.length;
+                document.getElementById('total-products').textContent = totalProducts;
+                const productRowRenderer = (product) => {
+                    const tr = document.createElement('tr');
+                    tr.classList.add('hover:bg-gray-50', 'transition-colors');
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${product.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${product.code}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatCurrency(product.prixRevient)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatCurrency(product.nouvPrixGrosHT)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatCurrency(product.pghtReel)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatCurrency(product.xconsg)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-indigo-600 hover:text-indigo-900 mr-4 edit-btn" data-id="${product.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                </svg>
+                                Editer
+                            </button>
+                            <button class="text-red-600 hover:text-red-900 delete-btn" data-id="${product.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 112 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                                </svg>
+                                Supprimer
+                            </button>
+                        </td>
+                    `;
+                    return tr;
+                };
+                renderTable(products, productsTableBody, productRowRenderer);
+            });
+        };
+
+        const fetchAndRenderTStock = () => {
+            if (!db) return;
+            onSnapshot(tStockCollectionRef(), (snapshot) => {
+                tstock = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Update home page stats
+                pendingCompensationsAmount = tstock.reduce((sum, t) => sum + t.compensationAmount, 0);
+                document.getElementById('pending-compensations-amount').textContent = pendingCompensationsAmount;
+                
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+                monthlyTransactions = tstock.filter(t => {
+                    const transactionDate = new Date(t.date);
+                    return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
+                }).length;
+                document.getElementById('monthly-transactions').textContent = monthlyTransactions;
+
+                const tstockRowRenderer = (transaction) => {
+                    const tr = document.createElement('tr');
+                    tr.classList.add('hover:bg-gray-50', 'transition-colors');
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${transaction.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${transaction.productName}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${transaction.quantity}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatCurrency(transaction.compensationAmount)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${transaction.date}</td>
+                    `;
+                    return tr;
+                };
+                renderTable(tstock, tstockTableBody, tstockRowRenderer);
+            });
+        };
+
+        // --- Event Listeners ---
+
+        // Sidebar navigation
+        sidebarItems.forEach(item => {
+            item.addEventListener('click', (event) => {
+                const page = event.currentTarget.dataset.page;
+                setPage(page);
+                if (page === 'products') {
+                    fetchAndRenderProducts();
+                } else if (page === 'tstock') {
+                    fetchAndRenderTStock();
+                }
+            });
+        });
+
+        // Products Page Event Handlers
+        addProductBtn.addEventListener('click', () => {
+            modalTitle.textContent = 'Ajouter un Produit';
+            productForm.reset();
+            productIdInput.value = '';
+            isEditMode = false;
+            productModal.style.display = 'flex';
+        });
+
+        closeProductModalBtn.addEventListener('click', () => {
+            productModal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target === productModal) {
+                productModal.style.display = 'none';
+            }
+            if (event.target === confirmationModal) {
+                confirmationModal.style.display = 'none';
+            }
+        });
+
+        productsTableBody.addEventListener('click', async (event) => {
+            if (event.target.closest('.edit-btn')) {
+                const id = event.target.closest('.edit-btn').dataset.id;
+                const productToEdit = products.find(p => p.id === id);
+                if (productToEdit) {
+                    modalTitle.textContent = 'Éditer un Produit';
+                    document.getElementById('productName').value = productToEdit.name;
+                    document.getElementById('productCode').value = productToEdit.code;
+                    document.getElementById('prixRevient').value = productToEdit.prixRevient;
+                    document.getElementById('nouvPrixGrosHT').value = productToEdit.nouvPrixGrosHT;
+                    document.getElementById('pghtReel').value = productToEdit.pghtReel;
+                    document.getElementById('xconsg').value = productToEdit.xconsg;
+                    productIdInput.value = id;
+                    isEditMode = true;
+                    productModal.style.display = 'flex';
+                }
+            }
+            if (event.target.closest('.delete-btn')) {
+                productToDeleteId = event.target.closest('.delete-btn').dataset.id;
+                confirmationModal.style.display = 'flex';
+            }
+        });
+
+        confirmDeleteBtn.addEventListener('click', async () => {
+            if (productToDeleteId) {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/products`, productToDeleteId));
+                    console.log("Document successfully deleted!");
+                } catch (e) {
+                    console.error("Error removing document: ", e);
+                } finally {
+                    confirmationModal.style.display = 'none';
+                    productToDeleteId = null;
+                }
+            }
+        });
+
+        cancelDeleteBtn.addEventListener('click', () => {
+            confirmationModal.style.display = 'none';
+            productToDeleteId = null;
+        });
+
+        productForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const productData = {
+                name: document.getElementById('productName').value,
+                code: document.getElementById('productCode').value,
+                prixRevient: parseFloat(document.getElementById('prixRevient').value),
+                nouvPrixGrosHT: parseFloat(document.getElementById('nouvPrixGrosHT').value),
+                pghtReel: parseFloat(document.getElementById('pghtReel').value),
+                xconsg: parseFloat(document.getElementById('xconsg').value),
+            };
+
+            try {
+                if (isEditMode) {
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/products`, productIdInput.value), productData);
+                    console.log("Document successfully updated!");
+                } else {
+                    await addDoc(productsCollectionRef(), productData);
+                    console.log("Document successfully written!");
+                }
+            } catch (e) {
+                console.error("Error adding/updating document: ", e);
+            }
+            productModal.style.display = 'none';
+        });
+
+        // Compensation Page Event Handlers
+        calculateBtn.addEventListener('click', async () => {
+            const month = parseInt(compMonthSelect.value);
+            const year = parseInt(compYearInput.value);
+            
+            if (!month || !year) {
+                // Use a custom message instead of alert()
+                document.getElementById('compensationResult').innerHTML = `<p class="text-red-500">Veuillez sélectionner un mois et une année.</p>`;
+                document.getElementById('compensationResult').classList.remove('hidden');
+                return;
+            }
+
+            // Get the start and end of the selected month
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 0);
+
+            // Filter TStock data for the selected period
+            const filteredTStock = tstock.filter(t => {
+                const transactionDate = new Date(t.date);
+                return transactionDate >= startDate && transactionDate <= endDate;
+            });
+
+            // Calculate total compensation for the period
+            let totalCompensation = 0;
+            const detailedCalculations = [];
+
+            for (const transaction of filteredTStock) {
+                // Find the corresponding product to get the necessary price fields
+                const product = products.find(p => p.id === transaction.productId);
+                if (product) {
+                    const compensationAmount = calculateCompensation(
+                        product.prixRevient,
+                        product.nouvPrixGrosHT,
+                        product.pghtReel,
+                        product.xconsg
+                    ) * transaction.quantity;
+                    totalCompensation += compensationAmount;
+                    detailedCalculations.push({
+                        ...transaction,
+                        compensationAmount: compensationAmount,
+                        productName: product.name,
+                    });
+                }
+            }
+
+            lastCalculatedData = detailedCalculations;
+
+            reportMonthYearSpan.textContent = `${compMonthSelect.options[compMonthSelect.selectedIndex].text} ${year}`;
+            resultAmountSpan.textContent = formatCurrency(totalCompensation);
+            compensationResultDiv.classList.remove('hidden');
+            printReportBtn.classList.remove('hidden');
+        });
+
+        printReportBtn.addEventListener('click', () => {
+            // Populate the hidden print content
+            printMonthYearSpan.textContent = `${compMonthSelect.options[compMonthSelect.selectedIndex].text} ${compYearInput.value}`;
+            printTotalAmountSpan.textContent = resultAmountSpan.textContent;
+            
+            printReportTableBody.innerHTML = '';
+            const printRowRenderer = (transaction) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 text-sm text-gray-900">${transaction.id.substring(0, 8)}...</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${transaction.productName}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${transaction.quantity}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${formatCurrency(transaction.compensationAmount)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${transaction.date}</td>
+                `;
+                return tr;
+            };
+            renderTable(lastCalculatedData, printReportTableBody, printRowRenderer);
+
+            window.print();
+        });
+
+
+        // --- Initialisation ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            loadingSpinner.style.display = 'flex'; // Show spinner on page load
+            try {
+                // Initialize Firebase
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Authenticate user
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                // Set up auth state listener
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("User authenticated:", userId);
+                        userDisplayName.textContent = `Utilisateur ${userId.substring(0, 4)}...`;
+                        userInitials.textContent = userId.substring(0, 2).toUpperCase();
+
+                        // Fetch initial data once authenticated
+                        fetchAndRenderProducts();
+                        fetchAndRenderTStock();
+                        
+                        // Navigate to the initial page
+                        setPage('home');
+
+                        // Hide the spinner once everything is loaded
+                        loadingSpinner.style.display = 'none';
+
+                    } else {
+                        console.log("No user is signed in.");
+                        loadingSpinner.style.display = 'none';
+                    }
+                });
+
+                // Set current year as default in the year input
+                compYearInput.value = new Date().getFullYear();
+
+            } catch (error) {
+                console.error("Firebase initialization or authentication failed:", error);
+                loadingSpinner.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
