@@ -433,29 +433,9 @@
 
 
     <!-- JavaScript logic -->
-    <script type="module">
-        // Import Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, collection, onSnapshot, 
-            addDoc, doc, setDoc, deleteDoc, 
-            query, where, getDocs, updateDoc 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global variables for Firebase config and app ID
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let db;
-        let auth;
-        let userId;
-
-        // Collections references
-        const productsCollectionRef = () => collection(db, `artifacts/${appId}/public/data/products`);
-        const tStockCollectionRef = () => collection(db, `artifacts/${appId}/public/data/tstock`);
-
+    <script>
+        const API_BASE_URL = 'http://localhost:3000'; // URL de votre backend NestJS
+        
         // --- DOM Elements ---
         const sidebarItems = document.querySelectorAll('.sidebar-item');
         const pageTitle = document.getElementById('page-title');
@@ -493,12 +473,9 @@
         const printMonthYearSpan = document.getElementById('printMonthYear');
         const printTotalAmountSpan = document.getElementById('printTotalAmount');
         
-        // Data arrays to be populated from Firestore
+        // Data arrays to be populated from the backend
         let products = [];
         let tstock = [];
-        let totalProducts = 0;
-        let pendingCompensationsAmount = 0;
-        let monthlyTransactions = 0;
         let lastCalculatedData = [];
 
         const formatter = new Intl.NumberFormat('fr-TN', {
@@ -544,35 +521,16 @@
             showPage(pageName);
         };
         
-        // --- Compensation Calculation Logic (from the PDF) ---
-        const calculateCompensation = (x_prev, x_grop, xprix_gror, xconsg) => {
-            let xperte = 0;
-            let xmag = 0;
-            
-            if (x_prev > x_grop) {
-                xperte = parseFloat((x_prev - x_grop).toFixed(3));
-                xmag = parseFloat((xprix_gror - x_prev).toFixed(3));
-            } else {
-                xperte = 0;
-                xmag = 0;
-            }
+        // --- API Calls to Backend ---
 
-            if (x_grop < xprix_gror && x_grop > x_prev) {
-                xmag = parseFloat((xprix_gror - x_grop).toFixed(3));
-            }
-            
-            return parseFloat(((xperte + xmag) * xconsg).toFixed(2));
-        };
-
-        // --- Firestore Data Fetching and Rendering ---
-
-        const fetchAndRenderProducts = () => {
-            if (!db) return;
-            // Listen for real-time updates on the products collection
-            onSnapshot(productsCollectionRef(), (snapshot) => {
-                products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                totalProducts = products.length;
-                document.getElementById('total-products').textContent = totalProducts;
+        const fetchAndRenderProducts = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/product`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch products');
+                }
+                products = await response.json();
+                document.getElementById('total-products').textContent = products.length;
                 const productRowRenderer = (product) => {
                     const tr = document.createElement('tr');
                     tr.classList.add('hover:bg-gray-50', 'transition-colors');
@@ -601,22 +559,27 @@
                     return tr;
                 };
                 renderTable(products, productsTableBody, productRowRenderer);
-            });
+            } catch (error) {
+                console.error("Error fetching products:", error);
+            }
         };
 
-        const fetchAndRenderTStock = () => {
-            if (!db) return;
-            onSnapshot(tStockCollectionRef(), (snapshot) => {
-                tstock = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const fetchAndRenderTStock = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tstock`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch TStock history');
+                }
+                tstock = await response.json();
                 
-                // Update home page stats
-                pendingCompensationsAmount = tstock.reduce((sum, t) => sum + t.compensationAmount, 0);
-                document.getElementById('pending-compensations-amount').textContent = pendingCompensationsAmount;
+                // Update home page stats  
+                const totalCompensation = tstock.reduce((sum, t) => sum + t.compensationAmount, 0);
+                document.getElementById('pending-compensations-amount').textContent = totalCompensation;
                 
                 const now = new Date();
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
-                monthlyTransactions = tstock.filter(t => {
+                const monthlyTransactions = tstock.filter(t => {
                     const transactionDate = new Date(t.date);
                     return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
                 }).length;
@@ -626,16 +589,67 @@
                     const tr = document.createElement('tr');
                     tr.classList.add('hover:bg-gray-50', 'transition-colors');
                     tr.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${transaction.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${transaction.id.substring(0, 8)}...</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${transaction.productName}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${transaction.quantity}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatCurrency(transaction.compensationAmount)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${transaction.date}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${new Date(transaction.date).toLocaleDateString()}</td>
                     `;
                     return tr;
                 };
                 renderTable(tstock, tstockTableBody, tstockRowRenderer);
-            });
+            } catch (error) {
+                console.error("Error fetching TStock history:", error);
+            }
+        };
+
+        const saveProduct = async (productData) => {
+            try {
+                const url = isEditMode ? `${API_BASE_URL}/product/${productIdInput.value}` : `${API_BASE_URL}/product`;
+                const method = isEditMode ? 'PUT' : 'POST';
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(productData)
+                });
+                if (!response.ok) {
+                    throw new Error(`Failed to save product: ${response.statusText}`);
+                }
+                await fetchAndRenderProducts(); // Refresh the table
+                return true;
+            } catch (error) {
+                console.error("Error saving product:", error);
+                return false;
+            }
+        };
+        
+        const deleteProduct = async (id) => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/product/${id}`, {
+                    method: 'DELETE',
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to delete product');
+                }
+                await fetchAndRenderProducts(); // Refresh the table
+                return true;
+            } catch (error) {
+                console.error("Error deleting product:", error);
+                return false;
+            }
+        };
+
+        const getCompensationReport = async (month, year) => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/compensation/calculate?month=${month}&year=${year}`);
+                if (!response.ok) {
+                    throw new Error('Failed to calculate compensation');
+                }
+                return await response.json();
+            } catch (error) {
+                console.error("Error calculating compensation:", error);
+                return null;
+            }
         };
 
         // --- Event Listeners ---
@@ -649,6 +663,9 @@
                     fetchAndRenderProducts();
                 } else if (page === 'tstock') {
                     fetchAndRenderTStock();
+                } else if (page === 'home') {
+                    fetchAndRenderProducts(); // Fetch products for home page stats
+                    fetchAndRenderTStock(); // Fetch tstock for home page stats
                 }
             });
         });
@@ -700,15 +717,12 @@
 
         confirmDeleteBtn.addEventListener('click', async () => {
             if (productToDeleteId) {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/public/data/products`, productToDeleteId));
+                const success = await deleteProduct(productToDeleteId);
+                if (success) {
                     console.log("Document successfully deleted!");
-                } catch (e) {
-                    console.error("Error removing document: ", e);
-                } finally {
-                    confirmationModal.style.display = 'none';
-                    productToDeleteId = null;
                 }
+                confirmationModal.style.display = 'none';
+                productToDeleteId = null;
             }
         });
 
@@ -727,19 +741,10 @@
                 pghtReel: parseFloat(document.getElementById('pghtReel').value),
                 xconsg: parseFloat(document.getElementById('xconsg').value),
             };
-
-            try {
-                if (isEditMode) {
-                    await setDoc(doc(db, `artifacts/${appId}/public/data/products`, productIdInput.value), productData);
-                    console.log("Document successfully updated!");
-                } else {
-                    await addDoc(productsCollectionRef(), productData);
-                    console.log("Document successfully written!");
-                }
-            } catch (e) {
-                console.error("Error adding/updating document: ", e);
+            const success = await saveProduct(productData);
+            if (success) {
+                productModal.style.display = 'none';
             }
-            productModal.style.display = 'none';
         });
 
         // Compensation Page Event Handlers
@@ -748,51 +753,22 @@
             const year = parseInt(compYearInput.value);
             
             if (!month || !year) {
-                // Use a custom message instead of alert()
-                document.getElementById('compensationResult').innerHTML = `<p class="text-red-500">Veuillez sélectionner un mois et une année.</p>`;
-                document.getElementById('compensationResult').classList.remove('hidden');
+                compensationResultDiv.innerHTML = `<p class="text-red-500">Veuillez sélectionner un mois et une année.</p>`;
+                compensationResultDiv.classList.remove('hidden');
                 return;
             }
 
-            // Get the start and end of the selected month
-            const startDate = new Date(year, month - 1, 1);
-            const endDate = new Date(year, month, 0);
-
-            // Filter TStock data for the selected period
-            const filteredTStock = tstock.filter(t => {
-                const transactionDate = new Date(t.date);
-                return transactionDate >= startDate && transactionDate <= endDate;
-            });
-
-            // Calculate total compensation for the period
-            let totalCompensation = 0;
-            const detailedCalculations = [];
-
-            for (const transaction of filteredTStock) {
-                // Find the corresponding product to get the necessary price fields
-                const product = products.find(p => p.id === transaction.productId);
-                if (product) {
-                    const compensationAmount = calculateCompensation(
-                        product.prixRevient,
-                        product.nouvPrixGrosHT,
-                        product.pghtReel,
-                        product.xconsg
-                    ) * transaction.quantity;
-                    totalCompensation += compensationAmount;
-                    detailedCalculations.push({
-                        ...transaction,
-                        compensationAmount: compensationAmount,
-                        productName: product.name,
-                    });
-                }
+            const report = await getCompensationReport(month, year);
+            if (report) {
+                lastCalculatedData = report.details;
+                reportMonthYearSpan.textContent = `${compMonthSelect.options[compMonthSelect.selectedIndex].text} ${year}`;
+                resultAmountSpan.textContent = formatCurrency(report.totalCompensation);
+                compensationResultDiv.classList.remove('hidden');
+                printReportBtn.classList.remove('hidden');
+            } else {
+                 compensationResultDiv.innerHTML = `<p class="text-red-500">Erreur lors du calcul de la compensation. Veuillez vérifier que le backend est en cours d'exécution et accessible.</p>`;
+                compensationResultDiv.classList.remove('hidden');
             }
-
-            lastCalculatedData = detailedCalculations;
-
-            reportMonthYearSpan.textContent = `${compMonthSelect.options[compMonthSelect.selectedIndex].text} ${year}`;
-            resultAmountSpan.textContent = formatCurrency(totalCompensation);
-            compensationResultDiv.classList.remove('hidden');
-            printReportBtn.classList.remove('hidden');
         });
 
         printReportBtn.addEventListener('click', () => {
@@ -808,7 +784,7 @@
                     <td class="px-6 py-4 text-sm text-gray-600">${transaction.productName}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">${transaction.quantity}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">${formatCurrency(transaction.compensationAmount)}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${transaction.date}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${new Date(transaction.date).toLocaleDateString()}</td>
                 `;
                 return tr;
             };
@@ -821,50 +797,24 @@
         // --- Initialisation ---
         document.addEventListener('DOMContentLoaded', async () => {
             loadingSpinner.style.display = 'flex'; // Show spinner on page load
-            try {
-                // Initialize Firebase
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
+            
+            // Simuler une authentification simple pour l'UI
+            const user = { uid: 'user_12345' };
+            userDisplayName.textContent = `Utilisateur ${user.uid.substring(0, 4)}...`;
+            userInitials.textContent = user.uid.substring(0, 2).toUpperCase();
 
-                // Authenticate user
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                
-                // Set up auth state listener
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        console.log("User authenticated:", userId);
-                        userDisplayName.textContent = `Utilisateur ${userId.substring(0, 4)}...`;
-                        userInitials.textContent = userId.substring(0, 2).toUpperCase();
+            // Fetch initial data
+            await fetchAndRenderProducts();
+            await fetchAndRenderTStock();
+            
+            // Navigate to the initial page
+            setPage('home');
+            
+            // Hide the spinner once everything is loaded
+            loadingSpinner.style.display = 'none';
 
-                        // Fetch initial data once authenticated
-                        fetchAndRenderProducts();
-                        fetchAndRenderTStock();
-                        
-                        // Navigate to the initial page
-                        setPage('home');
-
-                        // Hide the spinner once everything is loaded
-                        loadingSpinner.style.display = 'none';
-
-                    } else {
-                        console.log("No user is signed in.");
-                        loadingSpinner.style.display = 'none';
-                    }
-                });
-
-                // Set current year as default in the year input
-                compYearInput.value = new Date().getFullYear();
-
-            } catch (error) {
-                console.error("Firebase initialization or authentication failed:", error);
-                loadingSpinner.style.display = 'none';
-            }
+            // Set current year as default in the year input
+            compYearInput.value = new Date().getFullYear();
         });
     </script>
 </body>
