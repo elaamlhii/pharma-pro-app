@@ -168,7 +168,7 @@
     </div>
 
     <!-- Login/Register Screen -->
-    <div id="authScreen" class="flex items-center justify-center min-h-screen bg-green-50 hidden">
+    <div id="authScreen" class="flex items-center justify-center min-h-screen bg-green-50">
         <div class="w-full max-w-md p-8 card text-center">
             <h1 id="authTitle" class="text-3xl font-extrabold text-green-heading mb-6">Connexion</h1>
             <div id="authMessage" class="mb-4 text-sm text-center font-medium hidden"></div>
@@ -244,7 +244,7 @@
         <!-- Main Content Area -->
         <main class="flex-grow p-10 print:hidden">
             <header class="flex justify-between items-center mb-10">
-                <h2 id="page-title" class="text-4xl font-extrabold text-green-heading tracking-tight"></h2>
+                <h2 id="page-title" class="text-4xl font-extrabold text-green-heading tracking-tight">Accueil</h2>
                 <div class="flex items-center space-x-4">
                     <span class="text-gray-600 font-medium">Bienvenue, <span id="user-display-name" class="text-green-heading">Agent Pharma</span> !</span>
                     <div class="h-12 w-12 rounded-full border-4 border-green-400 shadow-md flex items-center justify-center bg-gray-200 text-gray-700 font-bold text-xl">
@@ -328,7 +328,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    <!-- Products will be injected here by JavaScript -->
+                                    <!-- Les produits seront insérés ici par le JavaScript -->
                                 </tbody>
                             </table>
                         </div>
@@ -353,7 +353,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    <!-- TStock history will be injected here by JavaScript -->
+                                    <!-- L'historique TStock sera inséré ici par le JavaScript -->
                                 </tbody>
                             </table>
                         </div>
@@ -432,11 +432,11 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Compensation</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                         </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200" id="printReportTableBody">
-                        <!-- Print report rows will be injected here -->
-                    </tbody>
-                </table>
+</thead>
+<tbody class="bg-white divide-y divide-gray-200" id="printReportTableBody">
+    <!-- Les lignes du rapport d'impression seront insérées ici -->
+</tbody>
+</table>
             </div>
             <p class="text-right text-lg font-bold mt-4">Total Compensation : <span id="printTotalAmount">0 TND</span></p>
         </div>
@@ -504,354 +504,5 @@
             </div>
         </div>
     </div>
-
-    <script type="module">
-        // Firebase SDK imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, setPersistence, browserSessionPersistence, onAuthStateChanged, signOut, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, addDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // JavaScript Logic for PharmaPro Application
-        document.addEventListener('DOMContentLoaded', async () => {
-            // --- Initialisation des éléments du DOM ---
-            const authScreen = document.getElementById('authScreen');
-            const authForm = document.getElementById('authForm');
-            const authTitle = document.getElementById('authTitle');
-            const authMessage = document.getElementById('authMessage');
-            const authEmail = document.getElementById('authEmail');
-            const authPassword = document.getElementById('authPassword');
-            const authSubmitBtn = document.getElementById('authSubmitBtn');
-            const authToggleText = document.getElementById('authToggleText');
-            const authToggleButton = document.getElementById('authToggleButton');
-            const rememberMeCheckbox = document.getElementById('rememberMe');
-            const loadingScreen = document.getElementById('loadingScreen');
-            const appContainer = document.getElementById('app-container');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const sidebarItems = document.querySelectorAll('.sidebar-item');
-            const pageTitle = document.getElementById('page-title');
-            const pages = document.querySelectorAll('.page');
-            const userDisplayName = document.getElementById('user-display-name');
-            const userInitials = document.getElementById('user-initials');
-
-            // Modals & Forms
-            const productsTableBody = document.querySelector('#productsTable tbody');
-            const addProductBtn = document.getElementById('addProductBtn');
-            const productModal = document.getElementById('productModal');
-            const closeProductModalBtn = document.getElementById('closeProductModalBtn');
-            const modalTitle = document.getElementById('modalTitle');
-            const productForm = document.getElementById('productForm');
-            const tstockTableBody = document.querySelector('#tstockTable tbody');
-            const compensationResultDiv = document.getElementById('compensationResult');
-            const calculateBtn = document.getElementById('calculateBtn');
-            const printReportBtn = document.getElementById('printReportBtn');
-            const compMonthSelect = document.getElementById('compMonth');
-            const compYearInput = document.getElementById('compYear');
-            const resultAmountSpan = document.getElementById('resultAmount');
-            const reportMonthYearSpan = document.getElementById('reportMonthYear');
-            const confirmationModal = document.getElementById('confirmationModal');
-            const closeConfirmModalBtn = document.getElementById('closeConfirmModalBtn');
-            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-            const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-            const printReportTableBody = document.getElementById('printReportTableBody');
-            const printMonthYearSpan = document.getElementById('printMonthYear');
-            const printTotalAmountSpan = document.getElementById('printTotalAmount');
-
-            let isLogin = true;
-
-            // --- Fonctions d'aide ---
-            const showLoading = () => loadingScreen.classList.remove('hidden');
-            const hideLoading = () => loadingScreen.classList.add('hidden');
-
-            const showAuthScreen = () => {
-                appContainer.classList.add('hidden');
-                authScreen.classList.remove('hidden');
-            };
-
-            const showAppScreen = (user) => {
-                authScreen.classList.add('hidden');
-                appContainer.classList.remove('hidden');
-                const userEmail = user.email || 'Agent Pharma';
-                userDisplayName.textContent = userEmail.split('@')[0];
-                userInitials.textContent = userEmail.substring(0, 2).toUpperCase();
-                setPage('home');
-            };
-
-            const displayMessage = (message, isError = false) => {
-                authMessage.textContent = message;
-                authMessage.classList.remove('hidden');
-                authMessage.classList.remove('text-red-500', 'text-green-500');
-                authMessage.classList.add(isError ? 'text-red-500' : 'text-green-500');
-            };
-            
-            // --- Données Statiques de Démonstration ---
-            const products = [
-                { id: 'prod-001', name: 'Aspirine', code: 'ASP-100', prixRevient: 5.50, nouvPrixGrosHT: 6.20, pghtReel: 6.00, xconsg: 0.50 },
-                { id: 'prod-002', name: 'Paracétamol', code: 'PARA-500', prixRevient: 3.20, nouvPrixGrosHT: 4.00, pghtReel: 3.80, xconsg: 0.35 },
-                { id: 'prod-003', name: 'Ibuprofène', code: 'IBU-400', prixRevient: 7.80, nouvPrixGrosHT: 8.50, pghtReel: 8.20, xconsg: 0.60 },
-            ];
-            
-            const tstock = [
-                { id: 'tran-001', productName: 'Paracétamol', quantity: 15, compensationAmount: 5.25, date: '2024-05-15T10:00:00Z' },
-                { id: 'tran-002', productName: 'Aspirine', quantity: 10, compensationAmount: 5.00, date: '2024-05-12T14:30:00Z' },
-                { id: 'tran-003', productName: 'Ibuprofène', quantity: 20, compensationAmount: 12.00, date: '2024-04-20T09:15:00Z' },
-            ];
-
-            // --- Fonctions de rendu statique ---
-            const formatCurrency = (amount) => {
-                return new Intl.NumberFormat('fr-TN', { style: 'currency', currency: 'TND' }).format(amount).replace('TND', ' TND');
-            };
-
-            const renderTable = (data, tableBody, rowRenderer) => {
-                tableBody.innerHTML = ''; // Clear table
-                if (data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500">Aucune donnée disponible.</td></tr>`;
-                    return;
-                }
-                data.forEach(item => {
-                    const row = rowRenderer(item);
-                    tableBody.appendChild(row);
-                });
-            };
-
-            const renderProductsTable = () => {
-                const productRowRenderer = (product) => {
-                    const tr = document.createElement('tr');
-                    tr.classList.add('hover:bg-gray-50', 'transition-colors');
-                    tr.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${product.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${product.code}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatCurrency(product.prixRevient)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatCurrency(product.nouvPrixGrosHT)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatCurrency(product.pghtReel)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatCurrency(product.xconsg)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button class="text-indigo-600 hover:text-indigo-900 mr-4 edit-btn" data-id="${product.id}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                </svg>
-                                Editer
-                            </button>
-                            <button class="text-red-600 hover:text-red-900 delete-btn" data-id="${product.id}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 112 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
-                                </svg>
-                                Supprimer
-                            </button>
-                        </td>
-                    `;
-                    return tr;
-                };
-                renderTable(products, productsTableBody, productRowRenderer);
-            };
-
-            const renderTStockTable = () => {
-                 const tstockRowRenderer = (transaction) => {
-                    const tr = document.createElement('tr');
-                    tr.classList.add('hover:bg-gray-50', 'transition-colors');
-                    tr.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${transaction.id.substring(0, 8)}...</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${transaction.productName}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${transaction.quantity}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatCurrency(transaction.compensationAmount)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${new Date(transaction.date).toLocaleDateString()}</td>
-                    `;
-                    return tr;
-                };
-                renderTable(tstock, tstockTableBody, tstockRowRenderer);
-            };
-
-            const showPage = (pageName) => {
-                pages.forEach(page => {
-                    page.classList.add('hidden');
-                });
-                document.getElementById(`${pageName}-page`).classList.remove('hidden');
-            };
-
-            const setPage = (pageName) => {
-                sidebarItems.forEach(item => {
-                    item.classList.remove('active');
-                });
-                const activeItem = document.querySelector(`[data-page="${pageName}"]`);
-                if (activeItem) {
-                    activeItem.classList.add('active');
-                    pageTitle.textContent = activeItem.textContent;
-                }
-                showPage(pageName);
-                // Remplir les tableaux avec des données statiques pour le design
-                if (pageName === 'products') {
-                    renderProductsTable();
-                } else if (pageName === 'tstock') {
-                    renderTStockTable();
-                }
-            };
-
-            // --- Gestion de l'Authentification ---
-            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            const db = getFirestore(app);
-
-            // Listener d'état d'authentification Firebase
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    showAppScreen(user);
-                } else {
-                    showAuthScreen();
-                }
-                hideLoading();
-            });
-
-            // Toggle entre connexion et inscription
-            authToggleButton.addEventListener('click', () => {
-                isLogin = !isLogin;
-                authTitle.textContent = isLogin ? 'Connexion' : 'Créer un compte';
-                authSubmitBtn.textContent = isLogin ? 'Connexion' : 'Inscription';
-                authToggleText.textContent = isLogin ? 'Vous n\'avez pas de compte ?' : 'Vous avez déjà un compte ?';
-                authToggleButton.textContent = isLogin ? 'Créer un compte' : 'Connexion';
-                authMessage.classList.add('hidden');
-            });
-
-            // Soumission du formulaire d'authentification
-            authForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                showLoading();
-                const email = authEmail.value;
-                const password = authPassword.value;
-                const persistenceType = rememberMeCheckbox.checked ? browserLocalPersistence : browserSessionPersistence;
-
-                try {
-                    await setPersistence(auth, persistenceType);
-
-                    if (isLogin) {
-                        await signInWithEmailAndPassword(auth, email, password);
-                        displayMessage('Connexion réussie!', false);
-                    } else {
-                        await createUserWithEmailAndPassword(auth, email, password);
-                        displayMessage('Compte créé avec succès! Vous êtes maintenant connecté.', false);
-                    }
-                } catch (error) {
-                    console.error("Erreur d'authentification:", error);
-                    let errorMessage = "Une erreur est survenue.";
-                    if (error.code === 'auth/invalid-email') {
-                        errorMessage = "Adresse email invalide.";
-                    } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                        errorMessage = "Email ou mot de passe incorrect.";
-                    } else if (error.code === 'auth/user-not-found') {
-                        errorMessage = "Aucun utilisateur trouvé avec cet email.";
-                    } else if (error.code === 'auth/email-already-in-use') {
-                        errorMessage = "Cette adresse email est déjà utilisée.";
-                    } else if (error.code === 'auth/weak-password') {
-                        errorMessage = "Le mot de passe doit contenir au moins 6 caractères.";
-                    }
-                    displayMessage(errorMessage, true);
-                } finally {
-                    hideLoading();
-                }
-            });
-
-            // Déconnexion
-            logoutBtn.addEventListener('click', async () => {
-                showLoading();
-                try {
-                    await signOut(auth);
-                } catch (error) {
-                    console.error("Erreur de déconnexion:", error);
-                    // Using custom message box instead of alert()
-                    displayMessage('Une erreur est survenue lors de la déconnexion.', true);
-                } finally {
-                    hideLoading();
-                }
-            });
-
-            // --- Event Listeners pour le reste de l'application (statique) ---
-            
-            // Sidebar navigation
-            sidebarItems.forEach(item => {
-                item.addEventListener('click', (event) => {
-                    const page = event.currentTarget.dataset.page;
-                    setPage(page);
-                });
-            });
-
-            // Products Page Event Handlers
-            addProductBtn.addEventListener('click', () => {
-                modalTitle.textContent = 'Ajouter un Produit';
-                productModal.style.display = 'flex';
-            });
-
-            closeProductModalBtn.addEventListener('click', () => {
-                productModal.style.display = 'none';
-            });
-            
-            productsTableBody.addEventListener('click', (event) => {
-                // Ouvrir le modal pour l'édition/suppression
-                if (event.target.closest('.edit-btn')) {
-                    modalTitle.textContent = 'Éditer un Produit';
-                    productModal.style.display = 'flex';
-                }
-                if (event.target.closest('.delete-btn')) {
-                    confirmationModal.style.display = 'flex';
-                }
-            });
-
-            closeConfirmModalBtn.addEventListener('click', () => {
-                confirmationModal.style.display = 'none';
-            });
-            
-            confirmDeleteBtn.addEventListener('click', () => {
-                // Fermer le modal, aucune action réelle de suppression
-                confirmationModal.style.display = 'none';
-            });
-
-            cancelDeleteBtn.addEventListener('click', () => {
-                confirmationModal.style.display = 'none';
-            });
-
-            // Compensation Page Event Handlers
-            calculateBtn.addEventListener('click', () => {
-                const month = compMonthSelect.value;
-                const year = compYearInput.value;
-                
-                if (!month || !year) {
-                    compensationResultDiv.innerHTML = `<p class="text-red-500">Veuillez sélectionner un mois et une année.</p>`;
-                    compensationResultDiv.classList.remove('hidden');
-                    return;
-                }
-
-                // Calcul statique pour le design
-                const totalCompensation = tstock.reduce((sum, t) => sum + t.compensationAmount, 0);
-                
-                reportMonthYearSpan.textContent = `${compMonthSelect.options[compMonthSelect.selectedIndex].text} ${year}`;
-                resultAmountSpan.textContent = formatCurrency(totalCompensation);
-                compensationResultDiv.classList.remove('hidden');
-                printReportBtn.classList.remove('hidden');
-            });
-
-            printReportBtn.addEventListener('click', () => {
-                // Remplir la table d'impression avec les données statiques
-                printMonthYearSpan.textContent = `${compMonthSelect.options[compMonthSelect.selectedIndex].text} ${compYearInput.value}`;
-                printTotalAmountSpan.textContent = resultAmountSpan.textContent;
-                
-                const printRowRenderer = (transaction) => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="px-6 py-4 text-sm text-gray-900">${transaction.id.substring(0, 8)}...</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${transaction.productName}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${transaction.quantity}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${formatCurrency(transaction.compensationAmount)}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${new Date(transaction.date).toLocaleDateString()}</td>
-                    `;
-                    return tr;
-                };
-                renderTable(tstock, printReportTableBody, printRowRenderer);
-
-                window.print();
-            });
-
-            // Initialisation
-            compYearInput.value = new Date().getFullYear();
-            setPage('home');
-        });
-    </script>
 </body>
 </html>
