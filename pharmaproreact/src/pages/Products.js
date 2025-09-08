@@ -1,25 +1,10 @@
 import Header from '../components/header'
 import Sidebar from '../components/Sidebar'
 import StripedRows from '../components/stripedTableRow'
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
+import { useProducts } from '../providers/ProductsContext'
 
 const Products = () => {
-    const [products, setProducts] = useState([])
-    const [loading, setLoading] = useState(true)
-  
-    useEffect(() => {
-      axios
-        .get('http://localhost:5000/product') // NestJS endpoint
-        .then((res) => {
-          setProducts(res.data)
-          setLoading(false)
-        })
-        .catch((err) => {
-          console.error(err)
-          setLoading(false)
-        })
-    }, [products])
+  const { products, loading } = useProducts()
   return (
     <div className='flex'>
       <Sidebar />

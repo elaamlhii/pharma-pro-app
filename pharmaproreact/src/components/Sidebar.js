@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { NavLink } from 'react-router-dom'
 import { FaHome, FaBox, FaHistory, FaCalculator } from 'react-icons/fa'
 
@@ -12,7 +12,7 @@ const Sidebar = () => {
 
   return (
     <div
-      className='w-64 h-screen text-white flex flex-col p-4'
+      className='w-54  text-white flex flex-col p-4'
       style={{ backgroundColor: '#047857' }}
     >
       <h1 className='text-3xl font-bold mb-6'>PharmaPro</h1>

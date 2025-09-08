@@ -7,9 +7,11 @@ import SignInPage from './pages/SignInPage'
 import SignUpPage from './pages/SignUpPage'
 import TStock from './pages/TStock'
 import Compensation from './pages/Compensation'
+import { ProductsProvider } from './providers/ProductsContext'
 
 function App() {
   return (
+    <ProductsProvider>
     <Router>
       <Routes>
         <Route exact path='/sign-in' element={<SignInPage />} />
@@ -21,6 +23,7 @@ function App() {
         <Route path='/compensation' element={<Compensation />} />
       </Routes>
     </Router>
+    </ProductsProvider>
   )
 }
 

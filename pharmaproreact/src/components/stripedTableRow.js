@@ -98,7 +98,7 @@ const StripedRows = ({ initialProducts }) => {
                   </td>
                   <td className='px-6 py-4 whitespace-nowrap text-center'>
                     <span className='bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium'>
-                      {p.stocks?.[0]?.quantity || 0}
+                      {p.stocks?.length || 0}
                     </span>
                   </td>
                   <td className='px-6 py-4 text-center flex justify-center gap-2'>

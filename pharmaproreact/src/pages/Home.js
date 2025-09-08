@@ -1,27 +1,15 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import Header from '../components/header'
 import Sidebar from '../components/Sidebar'
 import Card from '../components/Card'
 import { FaBox, FaChartLine, FaHistory } from 'react-icons/fa'
-import axios from 'axios'
+import DashBoardLayerEight from '../components/Dashboard'
+
 import StripedRows from '../components/stripedTableRow'
+import { useProducts } from '../providers/ProductsContext'
 
 const Home = () => {
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    axios
-      .get('http://localhost:5000/product') // NestJS endpoint
-      .then((res) => {
-        setProducts(res.data)
-        setLoading(false)
-      })
-      .catch((err) => {
-        console.error(err)
-        setLoading(false)
-      })
-  }, [])
+  const { products, loading } = useProducts()
   // the total products with
 
   const totalStock = products.length
@@ -29,7 +17,7 @@ const Home = () => {
   return (
     <div className='flex'>
       <Sidebar />
-      <div className='flex-1 p-6 bg-gray-100 min-h-screen'>
+      <div className='flex-1 p-6 bg-gray-100 min-h-screen overflow-y-auto'>
         <Header
           onLogout={() => {
             // Clear any authentication tokens or user data here if needed
@@ -44,12 +32,7 @@ const Home = () => {
         </div>
 
         <div className='mt-8'>
-          <h2 className='text-2xl font-bold mb-4'>Liste des Produits</h2>
-          {loading ? (
-            <p>Chargement...</p>
-          ) : (
-           <StripedRows initialProducts={products}></StripedRows>
-          )}
+          <DashBoardLayerEight />
         </div>
       </div>
     </div>
